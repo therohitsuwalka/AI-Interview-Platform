@@ -42,6 +42,8 @@ import CodingRound from "./pages/Coding/CodingRound";
 
 import InterviewSetup from "./pages/InterviewSetup/InterviewSetup";
 
+import HistoryDetail from "./pages/HistoryDetail/HistoryDetail";
+
 function App() {
   return (
     <BrowserRouter>
@@ -169,6 +171,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <InterviewSetup />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history/:id"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <HistoryDetail />
               </MainLayout>
             </ProtectedRoute>
           }

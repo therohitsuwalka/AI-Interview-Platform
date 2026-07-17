@@ -2,19 +2,15 @@ import { GoogleGenAI } from "@google/genai";
 import Interview from "../models/Interview.js";
 import ResumeAnalysis from "../models/ResumeAnalysis.js";
 
-
 /* ==========================================================
    Generate AI Interview Questions
 ========================================================== */
 
 export const generateInterview = async (req, res) => {
- 
   try {
-
     const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+      apiKey: process.env.GEMINI_API_KEY,
     });
-
 
     const {
       company,
@@ -51,8 +47,8 @@ export const generateInterview = async (req, res) => {
     const skillsList = resumeAnalysis?.skills?.length
       ? resumeAnalysis.skills.join(", ")
       : Array.isArray(manualSkills) && manualSkills.length
-      ? manualSkills.join(", ")
-      : "Not Available";
+        ? manualSkills.join(", ")
+        : "Not Available";
 
     const prompt = `
 You are a Senior Technical Interviewer.
@@ -113,23 +109,19 @@ ${isJDBased ? "5. Prioritize questions that test the missing/weak skills for thi
 
     let response;
 
-try {
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+    } catch (error) {
+      console.log("2.5 Flash Busy. Trying Gemini 2.0 Flash...");
 
-  response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-  });
-
-} catch (error) {
-
-  console.log("2.5 Flash Busy. Trying Gemini 2.0 Flash...");
-
-  response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: prompt,
-  });
-
-}
+      response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt,
+      });
+    }
 
     let text = response.text;
 
@@ -180,12 +172,9 @@ try {
 ========================================================== */
 
 export const evaluateInterview = async (req, res) => {
-
-
   try {
-
     const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+      apiKey: process.env.GEMINI_API_KEY,
     });
 
     const {
@@ -195,91 +184,80 @@ export const evaluateInterview = async (req, res) => {
     } = req.body;
 
     // ----------------------------------------------------
-// Validate Empty Answers
-// ----------------------------------------------------
+    // Validate Empty Answers
+    // ----------------------------------------------------
 
-const hasValidAnswer = answers.some(
-  (item) =>
-    item.answer &&
-    item.answer.trim().length > 0
-);
+    const hasValidAnswer = answers.some(
+      (item) => item.answer && item.answer.trim().length > 0,
+    );
 
-if (!hasValidAnswer) {
+    if (!hasValidAnswer) {
+      const evaluation = {
+        overallScore: 0,
 
-  const evaluation = {
+        technical: 0,
 
-    overallScore: 0,
+        communication: 0,
 
-    technical: 0,
+        confidence: 0,
 
-    communication: 0,
+        grammar: 0,
 
-    confidence: 0,
+        recommendation: "Unable to Evaluate",
 
-    grammar: 0,
+        feedback: "No answers were submitted during the interview.",
 
-    recommendation: "Unable to Evaluate",
+        strengths: [],
 
-    feedback:
-      "No answers were submitted during the interview.",
+        weaknesses: ["Candidate did not answer any interview question."],
 
-    strengths: [],
+        improvements: [
+          "Answer the interview questions to receive AI evaluation.",
+        ],
+      };
 
-    weaknesses: [
-      "Candidate did not answer any interview question."
-    ],
+      const interview = await Interview.create({
+        user: req.user.id,
 
-    improvements: [
-      "Answer the interview questions to receive AI evaluation."
-    ]
+        resumeAnalysis: interviewData.analysisId || undefined,
 
-  };
+        company: interviewData.company,
 
-  const interview = await Interview.create({
-  user: req.user.id,
+        role: interviewData.role,
 
-  resumeAnalysis: interviewData.analysisId || undefined,
+        experience: interviewData.experience,
 
-  company: interviewData.company,
+        difficulty: interviewData.difficulty,
 
-  role: interviewData.role,
+        answers,
 
-  experience: interviewData.experience,
+        transcript: answers
+          .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
+          .join("\n\n"),
 
-  difficulty: interviewData.difficulty,
+        overallScore: evaluation.overallScore,
 
-  answers,
+        communication: evaluation.communication,
 
-  transcript: answers
-    .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
-    .join("\n\n"),
+        technical: evaluation.technical,
 
-  overallScore: evaluation.overallScore,
+        confidence: evaluation.confidence,
 
-  communication: evaluation.communication,
+        grammar: evaluation.grammar,
 
-  technical: evaluation.technical,
+        feedback: evaluation.feedback,
 
-  confidence: evaluation.confidence,
+        status: "Completed",
+      });
 
-  grammar: evaluation.grammar,
+      return res.status(200).json({
+        success: true,
 
-  feedback: evaluation.feedback,
+        evaluation,
 
-  status: "Completed",
-});
-
-  return res.status(200).json({
-
-    success: true,
-
-    evaluation,
-
-    interview,
-
-  });
-
-}
+        interview,
+      });
+    }
 
     if (!answers || answers.length === 0) {
       return res.status(400).json({
@@ -337,24 +315,22 @@ Return ONLY valid JSON in the following format.
       contents: prompt,
     });
 
-    
+    let result = "";
 
-   let result = "";
+    if (typeof response.text === "function") {
+      result = await response.text();
+    } else {
+      result = response.text;
+    }
 
-if (typeof response.text === "function") {
-  result = await response.text();
-} else {
-  result = response.text;
-}
+    result = result
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-result = result
-  .replace(/```json/g, "")
-  .replace(/```/g, "")
-  .trim();
-
-console.log("========== AI EVALUATION ==========");
-console.log(result);
-console.log("==================================");
+    console.log("========== AI EVALUATION ==========");
+    console.log(result);
+    console.log("==================================");
 
     let evaluation;
 
@@ -363,9 +339,9 @@ console.log("==================================");
       console.log("Evaluation Parsed Successfully");
     } catch (parseError) {
       console.error("========== JSON PARSE ERROR ==========");
-console.error(parseError);
-console.log(result);
-console.error("======================================");
+      console.error(parseError);
+      console.log(result);
+      console.error("======================================");
 
       evaluation = {
         overallScore: 75,
@@ -403,42 +379,40 @@ console.error("======================================");
       ),
     );
 
-   const interview = await Interview.create({
+    const interview = await Interview.create({
+      // Logged-in User
+      user: req.user.id,
 
-  // Logged-in User
-  user: req.user.id,
+      resumeAnalysis: interviewData.analysisId || undefined,
 
-  resumeAnalysis: interviewData.analysisId || undefined,
+      company: interviewData.company,
 
-  company: interviewData.company,
+      role: interviewData.role,
 
-  role: interviewData.role,
+      experience: interviewData.experience,
 
-  experience: interviewData.experience,
+      difficulty: interviewData.difficulty,
 
-  difficulty: interviewData.difficulty,
+      answers,
 
-  answers,
+      transcript: answers
+        .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
+        .join("\n\n"),
 
-  transcript: answers
-    .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
-    .join("\n\n"),
+      overallScore: evaluation.overallScore,
 
-  overallScore: evaluation.overallScore,
+      communication: evaluation.communication,
 
-  communication: evaluation.communication,
+      technical: evaluation.technical,
 
-  technical: evaluation.technical,
+      confidence: evaluation.confidence,
 
-  confidence: evaluation.confidence,
+      grammar: evaluation.grammar,
 
-  grammar: evaluation.grammar,
+      feedback: evaluation.feedback,
 
-  feedback: evaluation.feedback,
-
-  status: "Completed",
-
-});
+      status: "Completed",
+    });
 
     return res.status(200).json({
       success: true,
@@ -468,8 +442,7 @@ console.error("======================================");
 export const getInterviewHistory = async (req, res) => {
   try {
     const interviews = await Interview.find({
-
-  user: req.user.id,
+      user: req.user.id,
     })
 
       .sort({ createdAt: -1 })
@@ -505,7 +478,10 @@ export const getInterviewById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const interview = await Interview.findById(id);
+    const interview = await Interview.findOne({
+      _id: id,
+      user: req.user.id,
+    });
 
     if (!interview) {
       return res.status(404).json({
