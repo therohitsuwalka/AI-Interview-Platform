@@ -1,44 +1,18 @@
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: "http://localhost:5000/api/auth",
-});
-
-/* ==========================
-   Signup
-========================== */
+import api from "./api";
 
 export const signupUser = (data) =>
-  API.post("/signup", data);
-
-/* ==========================
-   Login
-========================== */
+  api.post("/auth/signup", data);
 
 export const loginUser = (data) =>
-  API.post("/login", data);
-
-/* ==========================
-   Forgot Password
-========================== */
+  api.post("/auth/login", data);
 
 export const forgotPassword = (email) =>
-  API.post("/forgot-password", {
-    email,
-  });
-
-/* ==========================
-   Verify OTP
-========================== */
+  api.post("/auth/forgot-password", { email });
 
 export const verifyOtp = (data) =>
-  API.post("/verify-otp", data);
-
-/* ==========================
-   Reset Password
-========================== */
+  api.post("/auth/verify-otp", data);
 
 export const resetPassword = (data) =>
-  API.post("/reset-password", data);
+  api.post("/auth/reset-password", data);
 
-export default API;
+export default api;

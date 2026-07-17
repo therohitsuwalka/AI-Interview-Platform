@@ -1,63 +1,18 @@
-import axios from "axios";
-
-const recruiterAPI = axios.create({
-  baseURL: "http://localhost:5000/api/recruiter",
-});
-
-recruiterAPI.interceptors.request.use((config) => {
-
-  const token = localStorage.getItem(
-    "recruiterToken"
-  );
-
-  if (token) {
-
-    config.headers.Authorization = `Bearer ${token}`;
-
-  }
-
-  return config;
-
-});
-
-/* ===================================
-   Recruiter Login
-=================================== */
+import api from "./api";
 
 export const recruiterLogin = (data) =>
-  recruiterAPI.post("/login", data);
-
-/* ===================================
-   Recruiter Signup
-=================================== */
+  api.post("/recruiter/login", data);
 
 export const recruiterSignup = (data) =>
-  recruiterAPI.post("/signup", data);
-
-/* ===================================
-   Dashboard
-=================================== */
+  api.post("/recruiter/signup", data);
 
 export const getRecruiterDashboard = () =>
-  recruiterAPI.get("/dashboard");
+  api.get("/recruiter/dashboard");
 
-/* ===================================
-   Candidate List
-=================================== */
-
-export const getCandidates = (
-  page = 1,
-  search = ""
-) =>
-  recruiterAPI.get(
-    `/candidates?page=${page}&search=${search}`
-  );
-
-/* ===================================
-   Candidate Details
-=================================== */
+export const getCandidates = (page = 1, search = "") =>
+  api.get(`/recruiter/candidates?page=${page}&search=${search}`);
 
 export const getCandidateDetails = (id) =>
-  recruiterAPI.get(`/candidate/${id}`);
+  api.get(`/recruiter/candidate/${id}`);
 
-export default recruiterAPI;
+export default api;

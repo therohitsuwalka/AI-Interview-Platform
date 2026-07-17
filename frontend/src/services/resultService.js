@@ -1,13 +1,9 @@
-import axios from "axios";
-
-const ResultAPI = axios.create({
-  baseURL: "http://localhost:5000/api/interview",
-});
+import api from "./api";
 
 export const saveResult = (data) =>
-  ResultAPI.post("/save-result", data);
+  api.post("/interview/save-result", data);
 
 export const getHistory = () =>
-  ResultAPI.get("/history");
+  api.get("/interview/history");
 
-export default ResultAPI;
+export default api;
